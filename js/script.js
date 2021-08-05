@@ -16,14 +16,16 @@ var eaten = false;
 
 var fruit;
 var how_many_fruit = 0;	
-// var fruit_x = Math.floor(Math.random() * 20);
-// var fruit_y = Math.floor(Math.random() * 20);
-var fruit_x = 1;
-var fruit_y = 1;
+var fruit_x = Math.floor(Math.random() * 20);
+var fruit_y = Math.floor(Math.random() * 20);
 
 $(document).ready(function(){
 	game = new snake_game();
 	game.ready();
+	
+	var date = new Date();
+	date = date.getFullYear();
+	$('#copyright_year').text(date);
 });
 
 function snake_game(){
@@ -41,80 +43,90 @@ function snake_game(){
 		self.createCells(rows, cols);
 		self.drawCells();			
 			
-		self.createTail(0, 0, false, eaten, how_many_fruit);
-		self.drawTail(eaten, how_many_fruit);
-		console.warn('snake_tail',snake_tail);	
-		
-		fruit = new Fruit(fruit_x, fruit_y, 0, 0);
+		self.createTail(0, 0, how_many_fruit);
+
+		fruit = new Fruit(fruit_x, fruit_y);
 		fruit.show(ctx);
 		
 		document.onkeydown = function(e) {
-			
 			if(e.keyCode == 38){                   // top
-				if(wall_collision(snake_i, snake_j-1)){	
-					snake_j = snake_j-1;
-					self.fruit_collision(snake_i, snake_j);							
+				if(self.wall_collision(snake_i, snake_j-1)){	
+					if(!self.body_collision(snake_i, snake_j-1)){	
+						snake_j = snake_j-1;
+						self.fruit_collision(snake_i, snake_j);							
+					} else {
+						self.lose_game();
+					}					
 				}	
 			} else if(e.keyCode == 39){           // right	
-				if(wall_collision(snake_i+1, snake_j)){	
-					snake_i = snake_i+1;					
-					self.fruit_collision(snake_i, snake_j);				
+				if(self.wall_collision(snake_i+1, snake_j)){	
+					if(!self.body_collision(snake_i+1, snake_j)){	
+						snake_i = snake_i+1;					
+						self.fruit_collision(snake_i, snake_j);				
+					} else {
+						self.lose_game();
+					}		
 				}
 			} else if(e.keyCode == 40){           // bottom	
-				if(wall_collision(snake_i, snake_j+1)){	
-					snake_j = snake_j+1;
-					self.fruit_collision(snake_i, snake_j);				
+				if(self.wall_collision(snake_i, snake_j+1)){	
+					if(!self.body_collision(snake_i, snake_j+1)){	
+						snake_j = snake_j+1;
+						self.fruit_collision(snake_i, snake_j);				
+					} else {
+						self.lose_game();
+					}	
 				}
 			} else if(e.keyCode == 37){           // left
-				if(wall_collision(snake_i-1, snake_j)){	
-					snake_i = snake_i-1;
-					self.fruit_collision(snake_i, snake_j);						
+				if(self.wall_collision(snake_i-1, snake_j)){	
+					if(!self.body_collision(snake_i-1, snake_j)){	
+						snake_i = snake_i-1;
+						self.fruit_collision(snake_i, snake_j);						
+					} else {
+						self.lose_game();
+					}			
 				}
 			}
-			console.warn('snake_tail',snake_tail, snake_tail.length);
 		}
 	}
 	
 	this.fruit_collision = function(i, j){
 		if(snake_i == fruit.i && snake_j == fruit.j){
-			console.warn('collision YES', eaten);
 			eaten = true;
 			how_many_fruit++;
 			
-			self.createTail(snake_i, snake_j, false, eaten, how_many_fruit);
-			self.drawTail(eaten, how_many_fruit);
+			self.createTail(snake_i, snake_j, how_many_fruit);
 			
 			fruit_x = Math.floor(Math.random() * 20);
 			fruit_y = Math.floor(Math.random() * 20);
-			fruit = new Fruit(fruit_x, fruit_y, snake_i, snake_j);
+			fruit = new Fruit(fruit_x, fruit_y);
 			fruit.show(ctx);
-		} else {
-			console.warn('collision NO', eaten);			
-			self.createTail(snake_i, snake_j, false, eaten, how_many_fruit);
-			self.drawTail(eaten, how_many_fruit);
+		} else {	
+			self.createTail(snake_i, snake_j, how_many_fruit);
 			
-			fruit = new Fruit(fruit_x, fruit_y, snake_i, snake_j);
+			fruit = new Fruit(fruit_x, fruit_y);
 			fruit.show(ctx);
 			
 			eaten = false;
 		}	
 	}
 	
-	this.createTail = function(i, j, visible, eaten, how_many_fruit){
-		snake_element = new Snake(i, j, visible, "#014d00");
+	this.createTail = function(i, j, how_many_fruit){
+		snake_element = new Snake(i, j, "#014d00");
 		for(var k in snake_tail){
 			snake_tail[k].color = "#026600"
 		}
-		snake_tail.push(snake_element);	
-		
+		snake_tail.push(snake_element);
+		var snake_tail01 = [];
+		for(var k=how_many_fruit+1; k>0; k--){
+			snake_tail01.push(snake_tail[snake_tail.length-k]);
+		}
+		snake_tail = snake_tail01;
+		self.drawTail(how_many_fruit);
 	}
 	
-	this.drawTail = function(eaten, how_many_fruit){
-		console.warn(eaten, how_many_fruit);
-			
+	this.drawTail = function(how_many_fruit){			
 		ctx.clearRect(0,0,canvas_width,canvas_width);
-		game.drawCells();
-		
+		game.drawCells();		
 		for(var k=how_many_fruit+1; k>0; k--){
 			snake_tail[snake_tail.length-k].show(ctx)
 		}
@@ -122,8 +134,7 @@ function snake_game(){
 	
 	this.createCanvas = function(canvas_width, canvas_height){
 		var canvas = document.getElementById("myCanvas");
-		ctx = canvas.getContext("2d");
-		
+		ctx = canvas.getContext("2d");		
 		canvas.width  = canvas_width;
 		canvas.height = canvas_height;
 	}
@@ -143,6 +154,45 @@ function snake_game(){
 		}
 	}
 	
+	this.wall_collision = function(i, j){
+		var wall_collision_snake = false;
+				
+		if(i>-1 && j>-1 && i<cols && j<cols){
+			wall_collision_snake = true;
+		} 
+		
+		return wall_collision_snake;
+	}
+	
+	this.body_collision = function(snake_i, snake_j){
+		var hit = false;
+		for(var k=how_many_fruit+1; k>0; k--){
+			if(snake_i == snake_tail[snake_tail.length-k].i && snake_j == snake_tail[snake_tail.length-k].j){
+				hit = true;
+				break;
+			} 		
+		}
+		return hit;
+	}
+
+	this.lose_game = function(){
+		alert('You bit your tail!');
+
+		snake_tail = [];
+		snake_i = 0;
+		snake_j = 0;
+		fruit_x = Math.floor(Math.random() * 20);
+		fruit_y = Math.floor(Math.random() * 20);
+		how_many_fruit = 0;
+
+		self.createCells(rows, cols);
+		self.drawCells();			
+			
+		self.createTail(0, 0, how_many_fruit);
+
+		fruit = new Fruit(fruit_x, fruit_y);
+		fruit.show(ctx);
+	}
 }
 
 function Cell(i, j){
@@ -169,7 +219,7 @@ function Cell(i, j){
 	}
 }
 
-function Fruit(i, j, snake_x, snake_y){
+function Fruit(i, j){
 	var self = this;
 	
 	self.i = i;
@@ -188,21 +238,18 @@ function Fruit(i, j, snake_x, snake_y){
 			}
 		};
 		
-		ctx.beginPath();
+		ctx.beginPath();		
 		ctx.moveTo(x, y);	
-		
-		ctx.moveTo(x, y);			
+				
 		ctx.fillStyle = "red";
 		ctx.fillRect(x,y, cell_w,cell_w);
 	}
 }
 
-function Snake(i, j, visible, color){
-	var self = this;
-	
+function Snake(i, j, color){
+	var self = this;	
 	self.i = i;
 	self.j = j;
-	self.visible = visible;
 	self.color = color;
 	
 	this.show = function(ctx){
@@ -213,14 +260,4 @@ function Snake(i, j, visible, color){
 		ctx.fillStyle = self.color;	//"#014d00" //#026600	
 		ctx.fillRect(x,y, cell_w,cell_w);
 	}
-}
-
-function wall_collision(i, j){
-	var wall_collision_snake = false;
-			
-	if(i>-1 && j>-1 && i<cols && j<cols){
-		wall_collision_snake = true;
-	} 
-	
-	return wall_collision_snake;
 }
